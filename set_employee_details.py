@@ -13,9 +13,9 @@ class InvalidContactNumberError(Exception):
         super().__init__(self.message)
 
 
-def confirmation() -> bool:
-    flag = input("confirm to change [y/n]: ")
-    return flag == "yes" or flag == "y"
+def confirmation(message="confirm to change [y/n]: ") -> bool:
+    flag = input(message)
+    return flag.lower() == "yes" or flag.lower() == "y"
 
 
 def set_name():

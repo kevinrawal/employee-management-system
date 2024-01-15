@@ -1,65 +1,115 @@
 # main.py
 from employee import Employee
+from command_info import print_main_help, print_update_help
+from manage_files import open_file_employee_data, open_file_available_id, close_file_available_id, \
+    close_file_employee_data, open_backup_files, clear_file, append_in_file
 from set_employee_details import (set_name, set_department_name, set_salary, set_email_id, set_contact_number,
-                                  generate_employee_id)
+                                  generate_employee_id, confirmation)
 
 
-def display_employee_details(employee_details):
-    print("\nEmployee Details:")
-    print("Employee ID:", employee_details[0])
-    print("Name:", employee_details[1], employee_details[2])
-    print("Email ID:", employee_details[4])
-    print("Contact Number:", employee_details[5])
-    print("Department:", employee_details[3])
-    print("Salary:", employee_details[6])
+def display_employee(employee: list):
+    print(
+        f"Employee ID: {employee[0]}, "
+        f"Name: {employee[1]} {employee[2]}, "
+        f"Email ID: {employee[4]}, "
+        f"Contact Number: {employee[5]}, "
+        f"Department: {employee[3]}, "
+        f"Salary: {employee[6]}\n"
+    )
 
 
-def update_employee_details(employee_list, employee_id):
+def display_all_employee(employee_list: dict):
+    employee_list = sorted(employee_list.items(), key=lambda x: x[0])
+
+    for _, employee in employee_list:
+        display_employee(employee)
+
+
+def add_employee(employee_list, available_id):
+    new_employee = Employee()
+    employee_id = generate_employee_id(employee_list, available_id)
+
+    new_employee.set_employee_id(employee_id)
+    first_name, second_name = set_name()
+    new_employee.set_name(first_name, second_name)
+    new_employee.set_email_id(set_email_id())
+    new_employee.set_contact_number(set_contact_number())
+    new_employee.set_department_name(set_department_name())
+    new_employee.set_salary(set_salary())
+
+    employee_list[employee_id] = new_employee.get_employee_details_list()
+    # append_in_file("employee_data_backup.txt", ", ".join(map(str, employee_list[employee_id])) + "\n")
+    print("New employee added 🥳")
+
+
+def delete_employee(employee_list: dict, available_id: list):
+
+    employee_ids = list(map(int, input("Enter Employee IDs to delete: ").split()))
+    if confirmation("Are you sure you wanted to delete[y/n]"):
+        for employee_id in employee_ids:
+            deleted_employee = employee_list.pop(employee_id, None)
+            if deleted_employee:
+                print(f"Employee {deleted_employee} deleted")
+                available_id.append(employee_id)
+                # append_in_file("available_id_backup.txt", employee_id)
+            else:
+                print("Employee not found.")
+
+
+def update_employee_details(employee_list):
+    employee_id = int(input("Enter Employee ID to update: "))
+
     if employee_id not in employee_list:
         print("Employee not found.")
-        return
 
-    pre_employee = employee_list[employee_id]
+    duplicate_employee = employee_list[employee_id].copy()  # shallow copy, used for recovery changes
+    prev_employee = employee_list[employee_id]  # deep copy
+    display_employee(prev_employee)
+    # print_update_help()
     while True:
-        display_employee_details(pre_employee)
-        print("\nOptions to Update:")
-        print("1. Update Name")
-        print("2. Update Email ID")
-        print("3. Update Contact Number")
-        print("4. Update Department")
-        print("5. Update Salary")
-        print("6. Go back")
 
-        update_option = int(input("Choose an option: "))
-        if update_option == 6:
-            print("Going back to the main menu.")
+        admin_command = input("$admin-update: ")
+        if admin_command == "exit-u":
+            # append_in_file("employee_data_backup.txt", ", ".join(map(str, employee_list[employee_id])) + "\n")
+            print("changes saved, Going back to the main menu.")
             break
 
-        elif 1 <= update_option <= 5:
-            if update_option == 1:
-                first_name, last_name = set_name()
-                pre_employee[1] = first_name
-                pre_employee[2] = last_name
-                print("Name updated successfully.")
+        elif admin_command == "exit":
+            if confirmation("changes will not saved if you exit directly, are you sure[y/n]"):
+                employee_list[employee_id] = duplicate_employee
+                print("changes not saved !!")
+                break
 
-            elif update_option == 2:
-                pre_employee[4] = set_email_id()
-                print("Email ID updated successfully.")
+        elif admin_command == "u-name":
+            first_name, last_name = set_name()
+            prev_employee[1] = first_name
+            prev_employee[2] = last_name
+            print("Name updated successfully.")
 
-            elif update_option == 3:
-                pre_employee[5] = set_contact_number()
-                print("Contact Number updated successfully.")
+        elif admin_command == "u-email":
+            prev_employee[4] = set_email_id()
+            print("Email ID updated successfully.")
 
-            elif update_option == 4:
-                pre_employee[3] = set_department_name()
-                print("Department updated successfully.")
+        elif admin_command == "u-contact":
+            prev_employee[5] = set_contact_number()
+            print("Contact Number updated successfully.")
 
-            elif update_option == 5:
-                pre_employee[6] = set_salary()
-                print("Salary updated successfully.")
+        elif admin_command == "u-department":
+            prev_employee[3] = set_department_name()
+            print("Department updated successfully.")
+
+        elif admin_command == "u-salary":
+            prev_employee[6] = set_salary()
+            print("Salary updated successfully.")
+
+        elif admin_command == "help":
+            print_main_help()
+
+        elif admin_command == "help-update":
+            print_update_help()
 
         else:
-            print("Invalid option. Please try again.")
+            print('invalid command, use "help-update" for list down all commands')
 
 
 def main():
@@ -67,86 +117,55 @@ def main():
     available_id = []
 
     # open employee details file and store it in dictionary
-    with open("employee_data.txt", "r") as file:
-        for line in file:
-            info_pieces = line.strip().split(', ')
-
-            employee_id = int(info_pieces[0])
-            salary = float(info_pieces[6])
-
-            # Replace the original values with converted ones
-            info_pieces[0] = employee_id
-            info_pieces[6] = salary
-
-            employee_list[employee_id] = info_pieces
+    open_file_employee_data(employee_list, "employee_data.txt")
 
     # open available ids list and store it in list
-    with open("available_id.txt", "r") as file:
-        for line in file:
-            available_id.append(int(line))
+    open_file_available_id(available_id, "available_id.txt")
 
-    print("\nMain Menu:")
-    print("1. Add New Employee")
-    print("2. Delete Employee")
-    print("3. Update Employee Information")
-    print("4. show employee details")
-    print("5. save and exit")
+    # backup
+    # if open_backup_files():
+    #     open_file_employee_data(employee_list, "employee_data_backup.txt")
+    #     open_file_available_id(available_id, "available_id_backup.txt")
+
+    # clear_file("employee_data_backup.txt")
+    # clear_file("available_id_backup.txt")
 
     while True:
-        user_input = int(input("$admin: "))  # I will change it in the future to string
+        user_input = input("$admin: ")
         match user_input:
             # add new employee
-            case 1:
-                new_employee = Employee()
-                employee_id = generate_employee_id(employee_list, available_id)
-
-                new_employee.set_employee_id(employee_id)
-                first_name, second_name = set_name()
-                new_employee.set_name(first_name, second_name)
-                new_employee.set_email_id(set_email_id())
-                new_employee.set_contact_number(set_contact_number())
-                new_employee.set_department_name(set_department_name())
-                new_employee.set_salary(set_salary())
-
-                employee_list[employee_id] = new_employee.get_employee_details_list()
-
-                print("New employee added 🥳")
+            case "add-employee":
+                add_employee(employee_list, available_id)
 
             # delete employee
-            case 2:
-                employee_id = int(input("Enter Employee ID to delete: "))
-                deleted_employee = employee_list.pop(employee_id, None)
-                if deleted_employee:
-                    print(f"Employee {deleted_employee} deleted")
-                    available_id.append(employee_id)
-                else:
-                    print("Employee not found.")
+            case "delete-employee":
+                delete_employee(employee_list, available_id)
 
             # update information about employee
-            case 3:
-                employee_id = int(input("Enter Employee ID to update: "))
-                update_employee_details(employee_list,employee_id)
+            case "update-employee":
+                update_employee_details(employee_list)
 
-            case 4:
-                #TODO
-                pass
+            case "read-employee":
+                display_all_employee(employee_list)
+
+            case "help":
+                print_main_help()
 
             # save and exit
-            case 5:
-                with open("employee_data.txt", "w") as file:
-                    for details in employee_list.values():
-                        file.write(", ".join(map(str, details)) + "\n")
-                    print("Employee data saved.")
+            case "exit":
+                # save employee data
+                close_file_employee_data(employee_list, "employee_data.txt")
 
-                with open("available_id.txt", "w") as file:
-                    for ids in available_id:
-                        file.write(str(ids) + "\n")
+                # save ids data
+                close_file_available_id(available_id, "available_id.txt")
 
-                print("Exiting the program.")
+                # clear_file("available_id_backup.txt")
+                # clear_file("employee_data_backup.txt")
+
+                print('::Logged out::')
                 break
-
             case _:
-                print("Invalid option. Please try again.")
+                print('Invalid command, use "help" to list down all commands')
 
 
 if __name__ == "__main__":
