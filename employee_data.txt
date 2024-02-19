@@ -1,5 +1,0 @@
-5, harshil, kapasi, OK, harshil@yahoo.com, +91 9876543124, 30.0
-4, parth, prajapati, sprinklurr, parthu@gmail.com, +91 1234567891, 30.0
-6, test4, last4, QA, test@gmail.com, +91 1234567897, 1.0
-3, test5, ok5, OKOK, xyz@abc.com, +911234567897, 3.0
-1, kevin, raval, PS, kevinrawal30@gmail.com, +91 123455567, 7.0
